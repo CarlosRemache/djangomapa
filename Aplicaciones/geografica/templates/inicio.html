@@ -117,25 +117,29 @@
 
       function mostrarUbicacionTiempoReal() {
         if ("geolocation" in navigator) {
-          navigator.geolocation.watchPosition((pos) => {
-            var lat = pos.coords.latitude;
-            var lon = pos.coords.longitude;
-            enviarUbicacion(lat, lon);
-          }, (error) => {
-            alert("Error al obtener ubicación: " + error.message);
-          }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
 
-          // Actualiza el mapa cada 3 segundos
-          setInterval(obtenerUbicacionServidor, 3000);
 
-          const boton = document.getElementById("btnUbicacion");
-          boton.disabled = true;
-          boton.textContent = "Ubicación activada ";
-          boton.style.backgroundColor = "#28a745";
-        } else {
-          alert("Tu navegador no soporta geolocalización.");
-        }
+         navigator.geolocation.watchPosition((pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const accuracy = pos.coords.accuracy; // metros de precisión
+          const coords = [lat, lon];
+
+          if (!phoneMarker) {
+            phoneMarker = L.marker(coords, { icon: phoneIcon }).addTo(map);
+            accuracyCircle = L.circle(coords, { radius: accuracy, color: 'blue', opacity: 0.2 }).addTo(map);
+          } else {
+            phoneMarker.setLatLng(coords);
+            accuracyCircle.setLatLng(coords).setRadius(accuracy);
+          }
+          map.panTo(coords);
+          enviarUbicacion(lat, lon);
+        }, (error) => {
+          alert("Error al obtener ubicación: " + error.message);
+        }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
       }
+
+
 
       document.getElementById("btnUbicacion").addEventListener("click", mostrarUbicacionTiempoReal);
    
