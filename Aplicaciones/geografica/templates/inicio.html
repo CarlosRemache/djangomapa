@@ -1,0 +1,148 @@
+{% extends "./plantilla.html" %}
+{% load static %}
+{% block contenido %}
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>localizacion de autos</title>
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+ 
+     <style>
+      body {
+          padding: 0;
+          margin: 0;
+      }
+      html, body, #map {
+          height: 100%;
+          width: 100vw;
+      }
+
+
+      #btnUbicacion {
+        position: absolute;
+        top: 150px;
+        left: 15px;
+        z-index: 1000;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      }
+
+      #btnUbicacion:hover {
+        background-color: #0056b3;
+      }
+
+     </style>
+ 
+  </head>
+
+  <body>
+    <button id="btnUbicacion">Activar ubicación</button>
+
+     <div id="map"></div>
+
+     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="crossorigin=""></script>
+
+
+    <script>
+
+    //inicia el mapa centrado en la provincia de cotopaxi
+      var map = L.map('map').setView([-0.9333, -78.6167], 15);
+
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+
+      // Ícono personalizado para el teléfono
+      var phoneIcon = L.icon({
+        iconUrl: '{% static "img/punto.png" %}', // Reemplaza con tu ícono (por ejemplo, un punto azul)
+        iconSize: [35, 35],// tamaño del icono
+        iconAnchor: [17, 17] // punto del ícono que se colocará en la coordenada
+
+      });
+
+      // se agrega null para que al momento de cargar el mapa no aparesca el icono
+      var phoneMarker = null; // Marcador para la ubicación del teléfono
+
+
+
+      // Enviar coordenadas al servidor
+      async function enviarUbicacion(lat, lon) {
+        try {
+          await fetch('/api/ubicacion_vehiculo/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitud: lat, longitud: lon })
+          });
+        } catch (err) { console.error('Error al enviar:', err); }
+      }
+
+
+
+      // Consultar coordenadas del servidor
+      // --- Consultar última ubicación del servidor (GET)
+      async function obtenerUbicacionServidor() {
+        try {
+          const res = await fetch('/api/ubicacion_vehiculo/');
+          const data = await res.json();
+
+          if (data.latitud && data.longitud) {
+            const coords = [data.latitud, data.longitud];
+
+            if (!phoneMarker) {
+              phoneMarker = L.marker(coords, { icon: phoneIcon }).addTo(map);
+            } else {
+              phoneMarker.setLatLng(coords);
+            }
+
+            map.panTo(coords);
+          }
+        } catch (error) {
+          console.error('Error al obtener ubicación:', error);
+        }
+      }
+
+
+
+
+      function mostrarUbicacionTiempoReal() {
+        if ("geolocation" in navigator) {
+          navigator.geolocation.watchPosition((pos) => {
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            enviarUbicacion(lat, lon);
+          }, (error) => {
+            alert("Error al obtener ubicación: " + error.message);
+          }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+
+          // Actualiza el mapa cada 3 segundos
+          setInterval(obtenerUbicacionServidor, 3000);
+
+          const boton = document.getElementById("btnUbicacion");
+          boton.disabled = true;
+          boton.textContent = "Ubicación activada ";
+          boton.style.backgroundColor = "#28a745";
+        } else {
+          alert("Tu navegador no soporta geolocalización.");
+        }
+      }
+
+      document.getElementById("btnUbicacion").addEventListener("click", mostrarUbicacionTiempoReal);
+   
+    </script>
+  </body>
+</html>
+
+
+
+{% endblock %}
