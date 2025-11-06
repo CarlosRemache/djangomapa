@@ -53,7 +53,7 @@
 
 
     <script>
-
+      <h3> nuevo mapa</h3>
     //inicia el mapa centrado en la provincia de cotopaxi
       var map = L.map('map').setView([-0.9333, -78.6167], 15);
 
@@ -73,7 +73,17 @@
 
       // se agrega null para que al momento de cargar el mapa no aparesca el icono
       var phoneMarker = null; // Marcador para la ubicación del teléfono
+      let lastLat = null;
+      let lastLon = null;
+      const MOVIMIENTO_MINIMO = 0.00005; // ≈ 5 m
 
+
+      // Función para calcular distancia aproximada
+      function movimientoReal(lat1, lon1, lat2, lon2) {
+        const diffLat = Math.abs(lat1 - lat2);
+        const diffLon = Math.abs(lon1 - lon2);
+        return diffLat > MOVIMIENTO_MINIMO || diffLon > MOVIMIENTO_MINIMO;
+      }
 
 
       // Enviar coordenadas al servidor
@@ -114,28 +124,38 @@
 
 
 
-
       function mostrarUbicacionTiempoReal() {
         if ("geolocation" in navigator) {
-          navigator.geolocation.watchPosition((pos) => {
-            var lat = pos.coords.latitude;
-            var lon = pos.coords.longitude;
-            enviarUbicacion(lat, lon);
-          }, (error) => {
-            alert("Error al obtener ubicación: " + error.message);
-          }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+          navigator.geolocation.watchPosition(
+            (pos) => {
+              const lat = pos.coords.latitude;
+              const lon = pos.coords.longitude;
 
-          // Actualiza el mapa cada 3 segundos
+              // Solo actualizar si realmente se movió más de 5 m
+              if (lastLat === null || movimientoReal(lat, lon, lastLat, lastLon)) {
+                enviarUbicacion(lat, lon);
+                lastLat = lat;
+                lastLon = lon;
+              }
+            },
+            (error) => {
+              alert("Error al obtener ubicación: " + error.message);
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+          );
+
+          // Actualiza el mapa cada 3 s
           setInterval(obtenerUbicacionServidor, 3000);
 
           const boton = document.getElementById("btnUbicacion");
           boton.disabled = true;
-          boton.textContent = "Ubicación activada ";
+          boton.textContent = "Ubicación activada";
           boton.style.backgroundColor = "#28a745";
         } else {
           alert("Tu navegador no soporta geolocalización.");
         }
       }
+
 
       document.getElementById("btnUbicacion").addEventListener("click", mostrarUbicacionTiempoReal);
    
