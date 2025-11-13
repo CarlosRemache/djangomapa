@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework', #activar el rest django api
+    'channels', #activar el chanel django
     'Aplicaciones.geografica'
 ]
 
@@ -79,7 +79,25 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'geografica.wsgi.application'
+WSGI_APPLICATION = 'geografica.wsgi.application'# Peticiones normales HTTP
+# Configuración para WebSockets con Channels  
+ASGI_APPLICATION = 'carros.asgi.application' #Django Channels usará ASGI_APPLICATION para los WebSockets.  WebSockets (tiempo real)
+
+
+
+# Configuración del backend de canales (Redis)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [(
+                os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
+            )],
+        },
+    },
+}
+
+
 
 
 # Database

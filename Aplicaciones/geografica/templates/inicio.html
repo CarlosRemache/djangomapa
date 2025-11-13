@@ -45,106 +45,63 @@
   </head>
 
   <body>
-    <button id="btnUbicacion">Activar ubicación</button>
+      <button id="btnUbicacion">Activar ubicación</button>
+    <div id="map"></div>
 
-     <div id="map"></div>
-
-     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="crossorigin=""></script>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
 
     <script>
-    //inicia el mapa centrado en la provincia de cotopaxi
-      var map = L.map('map').setView([-0.9333, -78.6167], 15);
-
+      // Inicializa el mapa
+      const map = L.map('map').setView([-0.9333, -78.6167], 15);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap'
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
       }).addTo(map);
 
-
-      // Ícono personalizado para el teléfono
-      var phoneIcon = L.icon({
-        iconUrl: '{% static "img/punto.png" %}', // Reemplaza con tu ícono (por ejemplo, un punto azul)
-        iconSize: [35, 35],// tamaño del icono
-        iconAnchor: [17, 17] // punto del ícono que se colocará en la coordenada
-
+      // Ícono personalizado
+      const phoneIcon = L.icon({
+        iconUrl: '{% static "img/punto.png" %}',
+        iconSize: [35, 35],
+        iconAnchor: [17, 17]
       });
 
-      // se agrega null para que al momento de cargar el mapa no aparesca el icono
-      var phoneMarker = null; // Marcador para la ubicación del teléfono
-      let lastLat = null;
-      let lastLon = null;
-      const MOVIMIENTO_MINIMO = 0.00005; // ≈ 5 m
+      let phoneMarker = null;
 
+      // === WebSocket ===
+      const socket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/ubicacion/');
 
-      // Función para calcular distancia aproximada
-      function movimientoReal(lat1, lon1, lat2, lon2) {
-        const diffLat = Math.abs(lat1 - lat2);
-        const diffLon = Math.abs(lon1 - lon2);
-        return diffLat > MOVIMIENTO_MINIMO || diffLon > MOVIMIENTO_MINIMO;
-      }
+      // Recibir coordenadas desde el servidor
+      socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const coords = [data.latitud, data.longitud];
 
-
-      // Enviar coordenadas al servidor
-      async function enviarUbicacion(lat, lon) {
-        try {
-          await fetch('/api/ubicacion_vehiculo/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ latitud: lat, longitud: lon })
-          });
-        } catch (err) { console.error('Error al enviar:', err); }
-      }
-
-
-
-      // Consultar coordenadas del servidor
-      // --- Consultar última ubicación del servidor (GET)
-      async function obtenerUbicacionServidor() {
-        try {
-          const res = await fetch('/api/ubicacion_vehiculo/');
-          const data = await res.json();
-
-          if (data.latitud && data.longitud) {
-            const coords = [data.latitud, data.longitud];
-
-            if (!phoneMarker) {
-              phoneMarker = L.marker(coords, { icon: phoneIcon }).addTo(map);
-            } else {
-              phoneMarker.setLatLng(coords);
-            }
-
-            map.panTo(coords);
-          }
-        } catch (error) {
-          console.error('Error al obtener ubicación:', error);
+        if (!phoneMarker) {
+          phoneMarker = L.marker(coords, { icon: phoneIcon }).addTo(map);
+        } else {
+          phoneMarker.setLatLng(coords);
         }
-      }
+        map.panTo(coords);
+      };
 
+      socket.onclose = function(e) {
+        console.error('Conexión WebSocket cerrada inesperadamente');
+      };
 
-
+      
+      // Enviar coordenadas al servidor (desde el teléfono)
       function mostrarUbicacionTiempoReal() {
         if ("geolocation" in navigator) {
-          navigator.geolocation.watchPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lon = pos.coords.longitude;
-
-              // Solo actualizar si realmente se movió más de 5 m
-              if (lastLat === null || movimientoReal(lat, lon, lastLat, lastLon)) {
-                enviarUbicacion(lat, lon);
-                lastLat = lat;
-                lastLon = lon;
-              }
-            },
-            (error) => {
-              alert("Error al obtener ubicación: " + error.message);
-            },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-          );
-
-          // Actualiza el mapa cada 3 s
-          setInterval(obtenerUbicacionServidor, 3000);
+          navigator.geolocation.watchPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            console.log(" Coordenadas enviadas:", lat, lon);
+            
+            socket.send(JSON.stringify({ latitud: lat, longitud: lon }));
+          }, (error) => {
+            alert("Error al obtener ubicación: " + error.message);
+          }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
 
           const boton = document.getElementById("btnUbicacion");
           boton.disabled = true;
@@ -156,8 +113,10 @@
       }
 
 
-      document.getElementById("btnUbicacion").addEventListener("click", mostrarUbicacionTiempoReal);
-   
+
+
+      document.getElementById("btnUbicacion")
+              .addEventListener("click", mostrarUbicacionTiempoReal);
     </script>
   </body>
 </html>
