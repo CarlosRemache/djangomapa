@@ -81,7 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'geografica.wsgi.application'# Peticiones normales HTTP
 # Configuración para WebSockets con Channels  
-ASGI_APPLICATION = 'carros.asgi.application' #Django Channels usará ASGI_APPLICATION para los WebSockets.  WebSockets (tiempo real)
+ASGI_APPLICATION = 'geografica.asgi.application' #Django Channels usará ASGI_APPLICATION para los WebSockets.  WebSockets (tiempo real)
 
 
 
