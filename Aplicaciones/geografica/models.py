@@ -1,4 +1,4 @@
-from django.contrib.gis.db import models
+from django.db import models
 from django.utils import timezone
 
 
@@ -29,7 +29,6 @@ class UbicacionVehiculo(models.Model):
     latitud_ubicacion = models.FloatField()
     longitud_ubicacion = models.FloatField()
     fecha_hora_ubicacion = models.DateTimeField(default=timezone.now)
-    punto = models.PointField(srid=4326, null=True, blank=True)   # Campo geográfico con PostGIS
 
 
     class Meta:
