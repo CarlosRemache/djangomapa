@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'channels', #activar el chanel django
     'Aplicaciones.geografica'
 ]
@@ -107,7 +108,8 @@ DATABASES = {
     'default': dj_database_url.config(
         # Replace this value with your local database's connection string.
         default='postgresql://postgres:postgres@localhost:5432/mysite',
-        conn_max_age=600
+        conn_max_age=600,
+        engine="django.contrib.gis.db.backends.postgis"
     )
 }
 
