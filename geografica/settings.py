@@ -29,7 +29,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', default='your secret key')
 DEBUG = 'RENDER' not in os.environ
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'djangomapa.onrender.com',
+    'localhost',
+    '127.0.0.1'
+]
+
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
@@ -49,6 +54,13 @@ INSTALLED_APPS = [
     'channels', #activar el chanel django
     'Aplicaciones.geografica'
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://djangomapa.onrender.com',
+    'https://*.onrender.com',   # evita errores futuros
+]
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
